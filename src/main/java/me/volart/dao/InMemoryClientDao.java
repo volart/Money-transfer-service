@@ -5,7 +5,7 @@ import me.volart.dao.model.ClientDto;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class ClientDaoImpl implements ClientDao {
+public class InMemoryClientDao implements ClientDao {
 
   private final Map<Long, ClientDto> storage = new ConcurrentHashMap<>();
 

@@ -16,6 +16,7 @@ import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.Response;
 import java.net.URI;
+import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -102,6 +103,15 @@ public class MoneyTransferServiceIT {
   }
 
   @Test
+  public void testGetClient_invalidId_successfullyGetting() {
+    Response response = restApi.target(URI.create("http://localhost:4567/client/invalidId"))
+        .request()
+        .get();
+    assertThat(response.getStatus()).isEqualTo(400);
+    assertThat(response.readEntity(String.class)).isEqualTo("ClientId should be a number, but -> invalidId");
+  }
+
+  @Test
   public void testGetClient_nonexistentClient_notFound() {
     Response response = restApi.target(URI.create("http://localhost:4567/client/1000000000"))
         .request()
@@ -140,6 +150,34 @@ public class MoneyTransferServiceIT {
     to = getClient(2);
     Account accountTo = to.getAccounts().get(0);
     assertThat(accountTo.getAmount()).isEqualTo(2000);
+
+    delete(1);
+    delete(2);
+  }
+
+  @Test
+  public void testMoneyTransfer_TwoClientsHaveDifferentCurrencyAccounts_successfullyTransferred() {
+    Client from = DataGenerator.createClient(1, "USD", 1000);
+    Client to = DataGenerator.createClient(2, "RUB", 1000);
+    createClient(from);
+    createClient(to);
+
+    TransferInfo info = new TransferInfo();
+    info.setAmount(1000);
+    info.setClientId(to.getId());
+    info.setCurrency("USD");
+    Response response = transfer(from.getId(), info);
+    assertThat(response.getStatus()).isEqualTo(200);
+    assertThat(response.readEntity(String.class)).isEqualTo("Money was successfully transferred");
+
+    from = getClient(1);
+    Account accountFrom = from.getAccounts().get(0);
+    assertThat(accountFrom.getAmount()).isEqualTo(0);
+    to = getClient(2);
+    Optional<Account> optionalAccount = to.getAccounts().stream().filter(a -> a.getCurrency().equals("USD")).findFirst();
+    assertThat(optionalAccount.isPresent()).isEqualTo(true);
+    Account accountTo = optionalAccount.get();
+    assertThat(accountTo.getAmount()).isEqualTo(1000);
 
     delete(1);
     delete(2);
@@ -214,6 +252,24 @@ public class MoneyTransferServiceIT {
     delete(1);
     delete(2);
   }
+
+  @Test
+  public void testMoneyTransfer_sendToItself_deniedTransfer() {
+    Client fromTo = DataGenerator.createClient(1, "RUB", 1000);
+
+    createClient(fromTo);
+
+    TransferInfo info = new TransferInfo();
+    info.setAmount(1000);
+    info.setClientId(fromTo.getId());
+    info.setCurrency("USD");
+    Response response = transfer(fromTo.getId(), info);
+    assertThat(response.getStatus()).isEqualTo(400);
+    assertThat(response.readEntity(String.class)).isEqualTo("Can't transfer money to the same account");
+
+    delete(1);
+  }
+
 
   @Test
   public void testMoneyTransfer_nClients_successfullyTransferred() {

@@ -5,9 +5,6 @@ import lombok.Data;
 @Data
 public class TransferInfo {
 
-  public TransferInfo() {
-  }
-
   /**
    * Recipient client id
    */

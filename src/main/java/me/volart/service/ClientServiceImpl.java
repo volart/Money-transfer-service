@@ -1,5 +1,6 @@
 package me.volart.service;
 
+import lombok.extern.slf4j.Slf4j;
 import me.volart.dao.ClientDao;
 import me.volart.dao.model.AccountDto;
 import me.volart.dao.model.ClientDto;
@@ -16,6 +17,7 @@ import java.util.Set;
 
 import static me.volart.util.DataConverter.convertFrom;
 
+@Slf4j
 public class ClientServiceImpl implements ClientService {
 
   private final ClientDao clientDao;
@@ -31,6 +33,7 @@ public class ClientServiceImpl implements ClientService {
 
     ClientDto clientDto = convertFrom(client);
     clientDao.save(clientDto);
+    log.info("Created client with id = {}", client.getId());
   }
 
   @Override
@@ -42,6 +45,7 @@ public class ClientServiceImpl implements ClientService {
   @Override
   public void deleteClient(long clientId) {
     clientDao.delete(clientId);
+    log.info("Deleted client with id = {}", clientId);
   }
 
   @Override
@@ -59,18 +63,19 @@ public class ClientServiceImpl implements ClientService {
     }
 
     if (fromId > toId) {
-      synchronized (from) {
-        synchronized (to) {
+      synchronized (from.getSyncObj()) {
+        synchronized (to.getSyncObj()) {
           transfer(from, to, transferInfo);
         }
       }
     } else {
-      synchronized (to) {
-        synchronized (from) {
+      synchronized (to.getSyncObj()) {
+        synchronized (from.getSyncObj()) {
           transfer(from, to, transferInfo);
         }
       }
     }
+    log.info("Money was transferred from {} to {}", fromId, toId);
   }
 
   private void transfer(ClientDto from, ClientDto to, TransferInfo transferInfo) {

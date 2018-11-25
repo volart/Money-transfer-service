@@ -10,6 +10,8 @@ import java.util.List;
 
 public final class DataConverter {
 
+  private DataConverter() {}
+
   public static ClientDto convertFrom(Client client){
     ClientDto clientDto = new ClientDto();
     List<AccountDto> accountDtos = new ArrayList<>();
