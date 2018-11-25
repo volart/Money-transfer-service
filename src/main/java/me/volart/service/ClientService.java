@@ -9,8 +9,6 @@ public interface ClientService {
 
   Client getClient(long clientId);
 
-  void updateClient(Client client);
-
   void deleteClient(long clientId);
 
   void transferMoney(long clientId, TransferInfo transferInfo);

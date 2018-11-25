@@ -20,7 +20,9 @@
     <lombok.version>1.18.4</lombok.version>
     <slf4j.version>1.7.25</slf4j.version>
     <junit.version>4.11</junit.version>
-    <jackson-core.version>2.9.4</jackson-core.version>
+    <jackson-core.version>2.9.5</jackson-core.version>
+    <jersey-client.version>2.25.1</jersey-client.version>
+    <assertj-core.version>3.11.1</assertj-core.version>
   </properties>
 
   <dependencies>
@@ -60,6 +62,20 @@
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <version>${junit.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.glassfish.jersey.core</groupId>
+      <artifactId>jersey-client</artifactId>
+      <version>${jersey-client.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <version>${assertj-core.version}</version>
       <scope>test</scope>
     </dependency>
 

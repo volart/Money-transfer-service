@@ -3,15 +3,14 @@ package me.volart.service;
 import me.volart.dao.ClientDao;
 import me.volart.dao.model.AccountDto;
 import me.volart.dao.model.ClientDto;
-import me.volart.dto.Account;
 import me.volart.dto.Client;
 import me.volart.dto.TransferInfo;
 import me.volart.exception.AccountException;
 import me.volart.exception.ClientNotFound;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
+
+import static me.volart.util.DataConverter.convertFrom;
 
 public class ClientServiceImpl implements ClientService {
 
@@ -21,32 +20,16 @@ public class ClientServiceImpl implements ClientService {
     this.clientDao = clientDao;
   }
 
-
   @Override
   public void createClient(Client client) {
-    ClientDto clientDto = new ClientDto();
-    clientDto.setId(client.getId());
-    List<AccountDto> accountDtos = new ArrayList<>();
-    for (Account account : client.getAccounts()) {
-      AccountDto accountDto = new AccountDto();
-      accountDto.setCurrency(account.getCurrency());
-      accountDto.setAmount(account.getAmount());
-      accountDtos.add(accountDto);
-    }
-    clientDto.setAccounts(accountDtos);
+    ClientDto clientDto = convertFrom(client);
     clientDao.save(clientDto);
   }
 
   @Override
   public Client getClient(long clientId) {
-    ClientDto clientDto = clientDao.findBy(clientId);
-
-    return null;
-  }
-
-  @Override
-  public void updateClient(Client client) {
-
+    ClientDto clientDto = getClientBy(clientId);
+    return convertFrom(clientDto);
   }
 
   @Override
@@ -57,49 +40,62 @@ public class ClientServiceImpl implements ClientService {
   @Override
   public void transferMoney(long clientId, TransferInfo transferInfo) {
     ClientDto from = getClientBy(clientId);
+
     long recipientClientId = transferInfo.getClientId();
     ClientDto to = getClientBy(recipientClientId);
 
-    if (clientId > recipientClientId) {
+    Long fromId = from.getId();
+    Long toId = to.getId();
+
+    if (fromId.equals(toId)) {
+      throw new AccountException("Can't transfer money to the same account");
+    }
+
+    if (fromId > toId) {
       synchronized (from) {
         synchronized (to) {
-          String currency = transferInfo.getCurrency();
-          AccountDto accountFrom = getAccount(from, currency);
-          long amountFrom = accountFrom.getAmount();
-          long amountTransfer = transferInfo.getAmount();
-          if (amountFrom < amountTransfer) {
-            throw new AccountException("Not enough money for transfer");
-          }
-
-          Optional<AccountDto> optionalAccountTo = to.getAccounts().stream().filter(acc -> acc.getCurrency().equals(currency)).findFirst();
-          if (optionalAccountTo.isPresent()) {
-            AccountDto accountTo = optionalAccountTo.get();
-            accountTo.setAmount(accountTo.getAmount() + amountTransfer);
-          } else {
-            AccountDto accountTo = new AccountDto();
-            accountTo.setAmount(amountTransfer);
-            accountTo.setCurrency(currency);
-            to.getAccounts().add(accountTo);
-          }
-          accountFrom.setAmount(amountFrom - amountTransfer);
-
-          clientDao.update(from);
-          clientDao.update(to);
+          transfer(from, to, transferInfo);
         }
       }
     } else {
       synchronized (to) {
         synchronized (from) {
-
+          transfer(from, to, transferInfo);
         }
       }
     }
   }
 
+  private void transfer(ClientDto from, ClientDto to, TransferInfo transferInfo) {
+    String currency = transferInfo.getCurrency();
+    AccountDto accountFrom = getAccount(from, currency);
+
+    long amountFrom = accountFrom.getAmount();
+    long amountTransfer = transferInfo.getAmount();
+    if (amountFrom < amountTransfer) {
+      throw new AccountException("Not enough money for transfer");
+    }
+
+    Optional<AccountDto> optionalAccountTo = to.getAccounts().stream().filter(acc -> acc.getCurrency().equals(currency)).findFirst();
+    if (optionalAccountTo.isPresent()) {
+      AccountDto accountTo = optionalAccountTo.get();
+      accountTo.setAmount(accountTo.getAmount() + amountTransfer);
+    } else {
+      AccountDto accountTo = new AccountDto();
+      accountTo.setAmount(amountTransfer);
+      accountTo.setCurrency(currency);
+      to.getAccounts().add(accountTo);
+    }
+    accountFrom.setAmount(amountFrom - amountTransfer);
+
+    clientDao.update(from);
+    clientDao.update(to);
+  }
+
   private ClientDto getClientBy(long clientId) {
     ClientDto client = clientDao.findBy(clientId);
     if (client == null) {
-      throw new ClientNotFound("There is not client with id = %d", Long.toString(clientId));
+      throw new ClientNotFound("There is not client with id = %", Long.toString(clientId));
     }
     return client;
   }

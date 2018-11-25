@@ -6,6 +6,6 @@ import java.util.List;
 
 @Data
 public class ClientDto {
-  private long id;
+  private Long id;
   private List<AccountDto> accounts;
 }

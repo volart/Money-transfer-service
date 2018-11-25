@@ -4,6 +4,7 @@ import lombok.Data;
 
 @Data
 public class Account {
+
   /**
    * Money amount
    */

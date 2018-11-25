@@ -1,9 +1,11 @@
 package me.volart.rest;
 
 import lombok.extern.slf4j.Slf4j;
+import me.volart.dto.Client;
 import me.volart.dto.TransferInfo;
 import me.volart.exception.ApiParameterException;
 import me.volart.exception.ClientNotFound;
+import me.volart.exception.MapperException;
 import me.volart.service.ClientService;
 import me.volart.util.Mapper;
 
@@ -11,7 +13,6 @@ import static spark.Spark.delete;
 import static spark.Spark.exception;
 import static spark.Spark.get;
 import static spark.Spark.post;
-import static spark.Spark.put;
 
 @Slf4j
 public class ClientApi {
@@ -21,39 +22,40 @@ public class ClientApi {
   public ClientApi(ClientService service) {
     this.service = service;
 
-    initCrudApi();
-    initTransferMoneyApi();
+    initApi();
     initExceptionMapper();
   }
 
-  private void initCrudApi() {
-    post("/client/:clientId", (req, res) -> {
-      return null;
+  private void initApi() {
+    post("/client", (req, res) -> {
+      Client client = Mapper.fromJson(req.body(), Client.class);
+      service.createClient(client);
+      res.status(201);
+      log.info("Created client with id = {}", client.getId());
+      return "Successfully created";
     });
 
     get("/client/:clientId", (req, res) -> {
-
-      return null;
-    });
-
-    put("/client/:clientId", (req, res) -> {
-      log.info("put: " + req.body());
-      return null;
+      long id = parsClientId(req.params(":clientId"));
+      Client client = service.getClient(id);
+      return Mapper.toJson(client);
     });
 
     delete("/client/:clientId", (req, res) -> {
-      log.info("delete: " + req.body());
-      return null;
+      long id = parsClientId(req.params(":clientId"));
+      service.deleteClient(id);
+      log.info("Deleted client with id = {}", id);
+      return "Successfully deleted";
     });
-  }
 
-  private void initTransferMoneyApi() {
     post("/client/:clientId/transfer", (req, res) -> {
       Long id = parsClientId(req.params(":clientId"));
       TransferInfo transferInfo = Mapper.fromJson(req.body(), TransferInfo.class);
       service.transferMoney(id, transferInfo);
-      return null;
+      log.info("Money was transferred from {} to {}", id, transferInfo.getClientId());
+      return "Money was successfully transferred";
     });
+
   }
 
   private void initExceptionMapper() {
@@ -66,11 +68,16 @@ public class ClientApi {
       res.status(404);
       res.body(exception.getMessage());
     });
+
+    exception(MapperException.class, (exception, req, res) -> {
+      res.status(400);
+      res.body(exception.getMessage());
+    });
   }
 
-  private Long parsClientId(String clientIdStr ){
+  private long parsClientId(String clientIdStr) {
     try {
-       return Long.valueOf(clientIdStr);
+      return Long.valueOf(clientIdStr);
     } catch (Exception e) {
       throw new ApiParameterException("ClientId should be a number, but -> %s", clientIdStr);
     }
