@@ -3,12 +3,16 @@ package me.volart.service;
 import me.volart.dao.ClientDao;
 import me.volart.dao.model.AccountDto;
 import me.volart.dao.model.ClientDto;
+import me.volart.dto.Account;
 import me.volart.dto.Client;
 import me.volart.dto.TransferInfo;
 import me.volart.exception.AccountException;
 import me.volart.exception.ClientNotFound;
 
+import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static me.volart.util.DataConverter.convertFrom;
 
@@ -22,6 +26,9 @@ public class ClientServiceImpl implements ClientService {
 
   @Override
   public void createClient(Client client) {
+    checkDuplicateCurrencies(client);
+    checkExistence(client);
+
     ClientDto clientDto = convertFrom(client);
     clientDao.save(clientDto);
   }
@@ -95,7 +102,7 @@ public class ClientServiceImpl implements ClientService {
   private ClientDto getClientBy(long clientId) {
     ClientDto client = clientDao.findBy(clientId);
     if (client == null) {
-      throw new ClientNotFound("There is not client with id = %", Long.toString(clientId));
+      throw new ClientNotFound("There is not client with id = %s", Long.toString(clientId));
     }
     return client;
   }
@@ -106,5 +113,22 @@ public class ClientServiceImpl implements ClientService {
       throw new AccountException("The account with specified currency does not exist");
     }
     return accountDto.get();
+  }
+
+  private void checkDuplicateCurrencies(Client client) {
+    List<Account> accounts = client.getAccounts();
+    Set<String> currencies = new HashSet<>();
+    for (Account account : accounts) {
+      if (!currencies.add(account.getCurrency())) {
+        throw new AccountException("Client (id = %s) has two similar currency accounts", Long.toString(client.getId()));
+      }
+    }
+  }
+
+  private void checkExistence(Client client) {
+    long id = client.getId();
+    if (clientDao.findBy(id) != null) {
+      throw new AccountException("Client (id = %s) already exists", Long.toString(id));
+    }
   }
 }

@@ -3,6 +3,7 @@ package me.volart.rest;
 import lombok.extern.slf4j.Slf4j;
 import me.volart.dto.Client;
 import me.volart.dto.TransferInfo;
+import me.volart.exception.AccountException;
 import me.volart.exception.ApiParameterException;
 import me.volart.exception.ClientNotFound;
 import me.volart.exception.MapperException;
@@ -70,6 +71,11 @@ public class ClientApi {
     });
 
     exception(MapperException.class, (exception, req, res) -> {
+      res.status(400);
+      res.body(exception.getMessage());
+    });
+
+    exception(AccountException.class, (exception, req, res) -> {
       res.status(400);
       res.body(exception.getMessage());
     });
