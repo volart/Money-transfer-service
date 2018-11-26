@@ -1,7 +1,9 @@
 package me.volart;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import me.volart.dto.Account;
 import me.volart.dto.Client;
+import me.volart.dto.ResponseInfo;
 import me.volart.dto.TransferInfo;
 import me.volart.util.DataGenerator;
 import me.volart.util.Mapper;
@@ -57,7 +59,8 @@ public class MoneyTransferServiceIT {
     Client client = DataGenerator.createClient(1, "RUB", 100);
     Response response = createClient(client);
     assertThat(response.getStatus()).isEqualTo(201);
-    assertThat(response.readEntity(String.class)).isEqualTo("Successfully created");
+    ResponseInfo responseInfo = parseResponse(response);
+    assertThat(responseInfo).isEqualTo(ResponseInfo.create("Successfully created"));
     delete(1);
   }
 
@@ -67,7 +70,8 @@ public class MoneyTransferServiceIT {
         .request()
         .post(Entity.json("{\"id\":1,\"account\":[{\"amount\":100,\"currency\":\"RUB\"}]}"));
     assertThat(response.getStatus()).isEqualTo(400);
-    assertThat(response.readEntity(String.class)).isEqualTo("Can't parse from JSON");
+    ResponseInfo responseInfo = parseResponse(response);
+    assertThat(responseInfo).isEqualTo(ResponseInfo.create("Can't parse from JSON"));
   }
 
   @Test
@@ -76,7 +80,8 @@ public class MoneyTransferServiceIT {
         .request()
         .post(Entity.json("{\"id\":2,\"accounts\":[{\"amount\":1000,\"currency\":\"USD\"},{\"amount\":1000,\"currency\":\"USD\"}]}"));
     assertThat(response.getStatus()).isEqualTo(400);
-    assertThat(response.readEntity(String.class)).isEqualTo("Client (id = 2) has two similar currency accounts");
+    ResponseInfo responseInfo = parseResponse(response);
+    assertThat(responseInfo).isEqualTo(ResponseInfo.create("Client (id = 2) has two similar currency accounts"));
   }
 
   @Test
@@ -85,7 +90,8 @@ public class MoneyTransferServiceIT {
     createClient(client);
     Response response = createClient(client);
     assertThat(response.getStatus()).isEqualTo(400);
-    assertThat(response.readEntity(String.class)).isEqualTo("Client (id = 1) already exists");
+    ResponseInfo responseInfo = parseResponse(response);
+    assertThat(responseInfo).isEqualTo(ResponseInfo.create("Client (id = 1) already exists"));
     delete(1);
   }
 
@@ -97,8 +103,8 @@ public class MoneyTransferServiceIT {
         .request()
         .get();
     assertThat(response.getStatus()).isEqualTo(200);
-    String respBody = response.readEntity(String.class);
-    assertThat(Mapper.fromJson(respBody, Client.class)).isEqualTo(expected);
+    ResponseInfo<Client> responseInfo = parseResponseWithData(response);
+    assertThat(responseInfo.getData()).isEqualTo(expected);
     delete(2);
   }
 
@@ -108,7 +114,8 @@ public class MoneyTransferServiceIT {
         .request()
         .get();
     assertThat(response.getStatus()).isEqualTo(400);
-    assertThat(response.readEntity(String.class)).isEqualTo("ClientId should be a number, but -> invalidId");
+    ResponseInfo responseInfo = parseResponse(response);
+    assertThat(responseInfo).isEqualTo(ResponseInfo.create("ClientId should be a number, but -> invalidId"));
   }
 
   @Test
@@ -117,16 +124,18 @@ public class MoneyTransferServiceIT {
         .request()
         .get();
     assertThat(response.getStatus()).isEqualTo(404);
-    assertThat(response.readEntity(String.class)).isEqualTo("There is not client with id = 1000000000");
+    ResponseInfo responseInfo = parseResponse(response);
+    assertThat(responseInfo).isEqualTo(ResponseInfo.create("There is not client with id = 1000000000"));
   }
 
   @Test
-  public void testDeleteClient_existedClient_successfullyDeleted() {
+  public void testDeleteClient_existingClient_successfullyDeleted() {
     Client expected = DataGenerator.createClient(3, "USD", 1000);
     createClient(expected);
     Response response = delete(3);
     assertThat(response.getStatus()).isEqualTo(200);
-    assertThat(response.readEntity(String.class)).isEqualTo("Successfully deleted");
+    ResponseInfo responseInfo = parseResponse(response);
+    assertThat(responseInfo).isEqualTo(ResponseInfo.create("Successfully deleted"));
   }
 
   @Test
@@ -142,7 +151,8 @@ public class MoneyTransferServiceIT {
     info.setCurrency("USD");
     Response response = transfer(from.getId(), info);
     assertThat(response.getStatus()).isEqualTo(200);
-    assertThat(response.readEntity(String.class)).isEqualTo("Money was successfully transferred");
+    ResponseInfo responseInfo = parseResponse(response);
+    assertThat(responseInfo).isEqualTo(ResponseInfo.create("Money was successfully transferred"));
 
     from = getClient(1);
     Account accountFrom = from.getAccounts().get(0);
@@ -168,7 +178,8 @@ public class MoneyTransferServiceIT {
     info.setCurrency("USD");
     Response response = transfer(from.getId(), info);
     assertThat(response.getStatus()).isEqualTo(200);
-    assertThat(response.readEntity(String.class)).isEqualTo("Money was successfully transferred");
+    ResponseInfo responseInfo = parseResponse(response);
+    assertThat(responseInfo).isEqualTo(ResponseInfo.create("Money was successfully transferred"));
 
     from = getClient(1);
     Account accountFrom = from.getAccounts().get(0);
@@ -196,7 +207,8 @@ public class MoneyTransferServiceIT {
     info.setCurrency("USD");
     Response response = transfer(from.getId(), info);
     assertThat(response.getStatus()).isEqualTo(400);
-    assertThat(response.readEntity(String.class)).isEqualTo("Not enough money for transfer");
+    ResponseInfo responseInfo = parseResponse(response);
+    assertThat(responseInfo).isEqualTo(ResponseInfo.create("Not enough money for transfer"));
 
     delete(1);
     delete(2);
@@ -213,7 +225,8 @@ public class MoneyTransferServiceIT {
     info.setCurrency("USD");
     Response response = transfer(from.getId(), info);
     assertThat(response.getStatus()).isEqualTo(404);
-    assertThat(response.readEntity(String.class)).isEqualTo("There is not client with id = 2");
+    ResponseInfo responseInfo = parseResponse(response);
+    assertThat(responseInfo).isEqualTo(ResponseInfo.create("There is not client with id = 2"));
 
     delete(1);
   }
@@ -229,7 +242,8 @@ public class MoneyTransferServiceIT {
     info.setCurrency("USD");
     Response response = transfer(1, info);
     assertThat(response.getStatus()).isEqualTo(404);
-    assertThat(response.readEntity(String.class)).isEqualTo("There is not client with id = 1");
+    ResponseInfo responseInfo = parseResponse(response);
+    assertThat(responseInfo).isEqualTo(ResponseInfo.create("There is not client with id = 1"));
 
     delete(2);
   }
@@ -247,7 +261,8 @@ public class MoneyTransferServiceIT {
     info.setCurrency("USD");
     Response response = transfer(from.getId(), info);
     assertThat(response.getStatus()).isEqualTo(400);
-    assertThat(response.readEntity(String.class)).isEqualTo("The account with specified currency does not exist");
+    ResponseInfo responseInfo = parseResponse(response);
+    assertThat(responseInfo).isEqualTo(ResponseInfo.create("The account with specified currency does not exist"));
 
     delete(1);
     delete(2);
@@ -265,7 +280,8 @@ public class MoneyTransferServiceIT {
     info.setCurrency("USD");
     Response response = transfer(fromTo.getId(), info);
     assertThat(response.getStatus()).isEqualTo(400);
-    assertThat(response.readEntity(String.class)).isEqualTo("Can't transfer money to the same account");
+    ResponseInfo responseInfo = parseResponse(response);
+    assertThat(responseInfo).isEqualTo(ResponseInfo.create("Can't transfer money to the same account"));
 
     delete(1);
   }
@@ -339,7 +355,8 @@ public class MoneyTransferServiceIT {
         .request()
         .get();
 
-    return Mapper.fromJson(response.readEntity(String.class), Client.class);
+    ResponseInfo<Client> responseInfo = parseResponseWithData(response);
+    return responseInfo.getData();
   }
 
   private Response transfer(long id, TransferInfo transferInfo) {
@@ -348,5 +365,13 @@ public class MoneyTransferServiceIT {
         .post(Entity.json(Mapper.toJson(transferInfo)));
   }
 
+  private  ResponseInfo parseResponse(Response response){
+    String json = response.readEntity(String.class);
+    return Mapper.fromJson(json, new TypeReference<ResponseInfo>() {});
+  }
 
+  private ResponseInfo<Client> parseResponseWithData(Response response){
+    String json = response.readEntity(String.class);
+    return Mapper.fromJson(json, new TypeReference<ResponseInfo<Client>>() {});
+  }
 }

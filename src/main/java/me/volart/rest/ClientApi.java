@@ -2,6 +2,7 @@ package me.volart.rest;
 
 import lombok.extern.slf4j.Slf4j;
 import me.volart.dto.Client;
+import me.volart.dto.ResponseInfo;
 import me.volart.dto.TransferInfo;
 import me.volart.exception.AccountException;
 import me.volart.exception.ApiParameterException;
@@ -9,6 +10,7 @@ import me.volart.exception.ClientNotFound;
 import me.volart.exception.MapperException;
 import me.volart.service.ClientService;
 import me.volart.util.Mapper;
+import spark.Response;
 
 import static org.eclipse.jetty.http.HttpStatus.BAD_REQUEST_400;
 import static org.eclipse.jetty.http.HttpStatus.CREATED_201;
@@ -37,50 +39,42 @@ public class ClientApi {
       Client client = Mapper.fromJson(req.body(), Client.class);
       service.createClient(client);
       res.status(CREATED_201);
-      return "Successfully created";
+      return Mapper.toJson(ResponseInfo.create("Successfully created"));
     });
 
     get("/client/:clientId", (req, res) -> {
       long id = parsClientId(req.params(PARAM_CLIENT_ID));
       Client client = service.getClient(id);
-      return Mapper.toJson(client);
+      ResponseInfo<Client> responseInfo = new ResponseInfo<>();
+      responseInfo.setData(client);
+      return Mapper.toJson(responseInfo);
     });
 
     delete("/client/:clientId", (req, res) -> {
       long id = parsClientId(req.params(PARAM_CLIENT_ID));
       service.deleteClient(id);
-      return "Successfully deleted";
+      return Mapper.toJson(ResponseInfo.create("Successfully deleted"));
     });
 
     post("/client/:clientId/transfer", (req, res) -> {
       Long id = parsClientId(req.params(PARAM_CLIENT_ID));
       TransferInfo transferInfo = Mapper.fromJson(req.body(), TransferInfo.class);
       service.transferMoney(id, transferInfo);
-      return "Money was successfully transferred";
+      return Mapper.toJson(ResponseInfo.create("Money was successfully transferred"));
     });
 
   }
 
   private void initExceptionMapper() {
-    exception(ApiParameterException.class, (exception, req, res) -> {
-      res.status(BAD_REQUEST_400);
-      res.body(exception.getMessage());
-    });
+    exception(ApiParameterException.class, (exception, req, res) -> hadleException(exception, res, BAD_REQUEST_400));
+    exception(ClientNotFound.class, (exception, req, res) -> hadleException(exception, res, NOT_FOUND_404));
+    exception(MapperException.class, (exception, req, res) -> hadleException(exception, res, BAD_REQUEST_400));
+    exception(AccountException.class, (exception, req, res) -> hadleException(exception, res, BAD_REQUEST_400));
+  }
 
-    exception(ClientNotFound.class, (exception, req, res) -> {
-      res.status(NOT_FOUND_404);
-      res.body(exception.getMessage());
-    });
-
-    exception(MapperException.class, (exception, req, res) -> {
-      res.status(BAD_REQUEST_400);
-      res.body(exception.getMessage());
-    });
-
-    exception(AccountException.class, (exception, req, res) -> {
-      res.status(BAD_REQUEST_400);
-      res.body(exception.getMessage());
-    });
+  private <T extends Exception> void hadleException(T exception, Response res, int statusCode) {
+    res.status(statusCode);
+    res.body(Mapper.toJson(ResponseInfo.create(exception.getMessage())));
   }
 
   private long parsClientId(String clientIdStr) {

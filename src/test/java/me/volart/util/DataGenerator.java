@@ -4,13 +4,14 @@ import me.volart.dao.model.AccountDto;
 import me.volart.dao.model.ClientDto;
 import me.volart.dto.Account;
 import me.volart.dto.Client;
+import me.volart.dto.ResponseInfo;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public final class DataGenerator {
 
-  public static Client createClient(long id, String currency, long amount){
+  public static Client createClient(long id, String currency, long amount) {
     Client client = new Client();
     client.setId(id);
     List<Account> accounts = new ArrayList<>();
@@ -22,7 +23,7 @@ public final class DataGenerator {
     return client;
   }
 
-  public static ClientDto createClientDto(long id, String currency, long amount){
+  public static ClientDto createClientDto(long id, String currency, long amount) {
     ClientDto clientDto = new ClientDto();
     clientDto.setId(id);
     List<AccountDto> accountDtos = new ArrayList<>();
@@ -32,5 +33,12 @@ public final class DataGenerator {
     accountDtos.add(accountDto);
     clientDto.setAccounts(accountDtos);
     return clientDto;
+  }
+
+  public static <T> ResponseInfo<T> createResponseInfo(String msg, T obj) {
+    ResponseInfo<T> responseInfo = new ResponseInfo<>();
+    responseInfo.setData(obj);
+    responseInfo.setMessage(msg);
+    return responseInfo;
   }
 }
