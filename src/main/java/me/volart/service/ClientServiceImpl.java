@@ -15,6 +15,12 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+import static me.volart.common.StatusCode.ACCOUNT_DOES_NOT_EXIST;
+import static me.volart.common.StatusCode.CLIENT_ALREADY_EXISTS;
+import static me.volart.common.StatusCode.CLIENT_DOES_NOT_EXIST;
+import static me.volart.common.StatusCode.NOT_ENOUGH_MONEY;
+import static me.volart.common.StatusCode.SAME_ACCOUNT;
+import static me.volart.common.StatusCode.SAME_CLIENT;
 import static me.volart.util.DataConverter.convertFrom;
 
 @Slf4j
@@ -59,7 +65,7 @@ public class ClientServiceImpl implements ClientService {
     Long toId = to.getId();
 
     if (fromId.equals(toId)) {
-      throw new AccountException("Can't transfer money to the same account");
+      throw new AccountException(SAME_CLIENT, "Can't transfer money to the same client");
     }
 
     if (fromId > toId) {
@@ -85,7 +91,7 @@ public class ClientServiceImpl implements ClientService {
     long amountFrom = accountFrom.getAmount();
     long amountTransfer = transferInfo.getAmount();
     if (amountFrom < amountTransfer) {
-      throw new AccountException("Not enough money for transfer");
+      throw new AccountException(NOT_ENOUGH_MONEY, "Not enough money for transfer");
     }
 
     Optional<AccountDto> optionalAccountTo = to.getAccounts().stream().filter(acc -> acc.getCurrency().equals(currency)).findFirst();
@@ -107,7 +113,7 @@ public class ClientServiceImpl implements ClientService {
   private ClientDto getClientBy(long clientId) {
     ClientDto client = clientDao.findBy(clientId);
     if (client == null) {
-      throw new ClientNotFound("There is not client with id = %s", Long.toString(clientId));
+      throw new ClientNotFound(CLIENT_DOES_NOT_EXIST,"There is not client with id = %s", Long.toString(clientId));
     }
     return client;
   }
@@ -115,7 +121,7 @@ public class ClientServiceImpl implements ClientService {
   private AccountDto getAccount(ClientDto client, String currency) {
     Optional<AccountDto> accountDto = client.getAccounts().stream().filter(acc -> acc.getCurrency().equals(currency)).findFirst();
     if (!accountDto.isPresent()) {
-      throw new AccountException("The account with specified currency does not exist");
+      throw new AccountException(ACCOUNT_DOES_NOT_EXIST, "The account with specified currency does not exist");
     }
     return accountDto.get();
   }
@@ -125,7 +131,7 @@ public class ClientServiceImpl implements ClientService {
     Set<String> currencies = new HashSet<>();
     for (Account account : accounts) {
       if (!currencies.add(account.getCurrency())) {
-        throw new AccountException("Client (id = %s) has two similar currency accounts", Long.toString(client.getId()));
+        throw new AccountException(SAME_ACCOUNT, "Client (id = %s) has two similar currency accounts", Long.toString(client.getId()));
       }
     }
   }
@@ -133,7 +139,7 @@ public class ClientServiceImpl implements ClientService {
   private void checkExistence(Client client) {
     long id = client.getId();
     if (clientDao.findBy(id) != null) {
-      throw new AccountException("Client (id = %s) already exists", Long.toString(id));
+      throw new AccountException(CLIENT_ALREADY_EXISTS, "Client (id = %s) already exists", Long.toString(id));
     }
   }
 }

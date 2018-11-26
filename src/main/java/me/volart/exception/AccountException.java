@@ -1,8 +1,10 @@
 package me.volart.exception;
 
+import me.volart.common.StatusCode;
+
 public class AccountException extends BaseException {
 
-  public AccountException(String message, String... args) {
-    super(message, args);
+  public AccountException(StatusCode statusCode, String message, String... args) {
+    super(statusCode, message, args);
   }
 }

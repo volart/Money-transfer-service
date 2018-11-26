@@ -29,7 +29,7 @@ public class MapperTest {
 
   @Test
   public void testToJson_forResponseIfo() {
-    String expected = "{\"message\":\"text_message\",\"data\":{\"id\":1,\"accounts\":[{\"amount\":100,\"currency\":\"RUB\"}]}}";
+    String expected = "{\"message\":\"text_message\",\"data\":{\"id\":1,\"accounts\":[{\"amount\":100,\"currency\":\"RUB\"}]},\"statusCode\":0}";
     Client client = DataGenerator.createClient(1, "RUB", 100);
     ResponseInfo<Client> responseInfo = DataGenerator.createResponseInfo("text_message", client);
 
@@ -42,7 +42,7 @@ public class MapperTest {
     Client client = DataGenerator.createClient(2, "USD", 1000);
     ResponseInfo<Client> expected = DataGenerator.createResponseInfo("text_message", client);
 
-    String json = "{\"message\":\"text_message\",\"data\":{\"id\":2,\"accounts\":[{\"amount\":1000,\"currency\":\"USD\"}]}}";
+    String json = "{\"message\":\"text_message\",\"data\":{\"id\":2,\"accounts\":[{\"amount\":1000,\"currency\":\"USD\"}]},\"statusCode\":0}";
     ResponseInfo<Client> actual = Mapper.fromJson(json, new TypeReference<ResponseInfo<Client>>() {});
     assertEquals(expected, actual);
   }

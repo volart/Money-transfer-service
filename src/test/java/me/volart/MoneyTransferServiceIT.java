@@ -25,6 +25,15 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static me.volart.common.StatusCode.ACCOUNT_DOES_NOT_EXIST;
+import static me.volart.common.StatusCode.CLIENT_ALREADY_EXISTS;
+import static me.volart.common.StatusCode.CLIENT_DOES_NOT_EXIST;
+import static me.volart.common.StatusCode.INVALID_ID;
+import static me.volart.common.StatusCode.NOT_ENOUGH_MONEY;
+import static me.volart.common.StatusCode.OK;
+import static me.volart.common.StatusCode.PARSER_ERROR;
+import static me.volart.common.StatusCode.SAME_ACCOUNT;
+import static me.volart.common.StatusCode.SAME_CLIENT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
@@ -60,7 +69,7 @@ public class MoneyTransferServiceIT {
     Response response = createClient(client);
     assertThat(response.getStatus()).isEqualTo(201);
     ResponseInfo responseInfo = parseResponse(response);
-    assertThat(responseInfo).isEqualTo(ResponseInfo.create("Successfully created"));
+    assertThat(responseInfo).isEqualTo(ResponseInfo.create("Successfully created", OK));
     delete(1);
   }
 
@@ -71,7 +80,7 @@ public class MoneyTransferServiceIT {
         .post(Entity.json("{\"id\":1,\"account\":[{\"amount\":100,\"currency\":\"RUB\"}]}"));
     assertThat(response.getStatus()).isEqualTo(400);
     ResponseInfo responseInfo = parseResponse(response);
-    assertThat(responseInfo).isEqualTo(ResponseInfo.create("Can't parse from JSON"));
+    assertThat(responseInfo).isEqualTo(ResponseInfo.create("Can't parse from JSON", PARSER_ERROR));
   }
 
   @Test
@@ -81,7 +90,7 @@ public class MoneyTransferServiceIT {
         .post(Entity.json("{\"id\":2,\"accounts\":[{\"amount\":1000,\"currency\":\"USD\"},{\"amount\":1000,\"currency\":\"USD\"}]}"));
     assertThat(response.getStatus()).isEqualTo(400);
     ResponseInfo responseInfo = parseResponse(response);
-    assertThat(responseInfo).isEqualTo(ResponseInfo.create("Client (id = 2) has two similar currency accounts"));
+    assertThat(responseInfo).isEqualTo(ResponseInfo.create("Client (id = 2) has two similar currency accounts", SAME_ACCOUNT));
   }
 
   @Test
@@ -91,7 +100,7 @@ public class MoneyTransferServiceIT {
     Response response = createClient(client);
     assertThat(response.getStatus()).isEqualTo(400);
     ResponseInfo responseInfo = parseResponse(response);
-    assertThat(responseInfo).isEqualTo(ResponseInfo.create("Client (id = 1) already exists"));
+    assertThat(responseInfo).isEqualTo(ResponseInfo.create("Client (id = 1) already exists", CLIENT_ALREADY_EXISTS));
     delete(1);
   }
 
@@ -115,7 +124,7 @@ public class MoneyTransferServiceIT {
         .get();
     assertThat(response.getStatus()).isEqualTo(400);
     ResponseInfo responseInfo = parseResponse(response);
-    assertThat(responseInfo).isEqualTo(ResponseInfo.create("ClientId should be a number, but -> invalidId"));
+    assertThat(responseInfo).isEqualTo(ResponseInfo.create("ClientId should be a number, but -> invalidId", INVALID_ID));
   }
 
   @Test
@@ -125,7 +134,7 @@ public class MoneyTransferServiceIT {
         .get();
     assertThat(response.getStatus()).isEqualTo(404);
     ResponseInfo responseInfo = parseResponse(response);
-    assertThat(responseInfo).isEqualTo(ResponseInfo.create("There is not client with id = 1000000000"));
+    assertThat(responseInfo).isEqualTo(ResponseInfo.create("There is not client with id = 1000000000", CLIENT_DOES_NOT_EXIST));
   }
 
   @Test
@@ -135,7 +144,7 @@ public class MoneyTransferServiceIT {
     Response response = delete(3);
     assertThat(response.getStatus()).isEqualTo(200);
     ResponseInfo responseInfo = parseResponse(response);
-    assertThat(responseInfo).isEqualTo(ResponseInfo.create("Successfully deleted"));
+    assertThat(responseInfo).isEqualTo(ResponseInfo.create("Successfully deleted", OK));
   }
 
   @Test
@@ -152,7 +161,7 @@ public class MoneyTransferServiceIT {
     Response response = transfer(from.getId(), info);
     assertThat(response.getStatus()).isEqualTo(200);
     ResponseInfo responseInfo = parseResponse(response);
-    assertThat(responseInfo).isEqualTo(ResponseInfo.create("Money was successfully transferred"));
+    assertThat(responseInfo).isEqualTo(ResponseInfo.create("Money was successfully transferred", OK));
 
     from = getClient(1);
     Account accountFrom = from.getAccounts().get(0);
@@ -179,7 +188,7 @@ public class MoneyTransferServiceIT {
     Response response = transfer(from.getId(), info);
     assertThat(response.getStatus()).isEqualTo(200);
     ResponseInfo responseInfo = parseResponse(response);
-    assertThat(responseInfo).isEqualTo(ResponseInfo.create("Money was successfully transferred"));
+    assertThat(responseInfo).isEqualTo(ResponseInfo.create("Money was successfully transferred", OK));
 
     from = getClient(1);
     Account accountFrom = from.getAccounts().get(0);
@@ -208,7 +217,7 @@ public class MoneyTransferServiceIT {
     Response response = transfer(from.getId(), info);
     assertThat(response.getStatus()).isEqualTo(400);
     ResponseInfo responseInfo = parseResponse(response);
-    assertThat(responseInfo).isEqualTo(ResponseInfo.create("Not enough money for transfer"));
+    assertThat(responseInfo).isEqualTo(ResponseInfo.create("Not enough money for transfer", NOT_ENOUGH_MONEY));
 
     delete(1);
     delete(2);
@@ -226,7 +235,7 @@ public class MoneyTransferServiceIT {
     Response response = transfer(from.getId(), info);
     assertThat(response.getStatus()).isEqualTo(404);
     ResponseInfo responseInfo = parseResponse(response);
-    assertThat(responseInfo).isEqualTo(ResponseInfo.create("There is not client with id = 2"));
+    assertThat(responseInfo).isEqualTo(ResponseInfo.create("There is not client with id = 2", CLIENT_DOES_NOT_EXIST));
 
     delete(1);
   }
@@ -243,7 +252,7 @@ public class MoneyTransferServiceIT {
     Response response = transfer(1, info);
     assertThat(response.getStatus()).isEqualTo(404);
     ResponseInfo responseInfo = parseResponse(response);
-    assertThat(responseInfo).isEqualTo(ResponseInfo.create("There is not client with id = 1"));
+    assertThat(responseInfo).isEqualTo(ResponseInfo.create("There is not client with id = 1", CLIENT_DOES_NOT_EXIST));
 
     delete(2);
   }
@@ -262,7 +271,7 @@ public class MoneyTransferServiceIT {
     Response response = transfer(from.getId(), info);
     assertThat(response.getStatus()).isEqualTo(400);
     ResponseInfo responseInfo = parseResponse(response);
-    assertThat(responseInfo).isEqualTo(ResponseInfo.create("The account with specified currency does not exist"));
+    assertThat(responseInfo).isEqualTo(ResponseInfo.create("The account with specified currency does not exist", ACCOUNT_DOES_NOT_EXIST));
 
     delete(1);
     delete(2);
@@ -281,7 +290,7 @@ public class MoneyTransferServiceIT {
     Response response = transfer(fromTo.getId(), info);
     assertThat(response.getStatus()).isEqualTo(400);
     ResponseInfo responseInfo = parseResponse(response);
-    assertThat(responseInfo).isEqualTo(ResponseInfo.create("Can't transfer money to the same account"));
+    assertThat(responseInfo).isEqualTo(ResponseInfo.create("Can't transfer money to the same client", SAME_CLIENT));
 
     delete(1);
   }

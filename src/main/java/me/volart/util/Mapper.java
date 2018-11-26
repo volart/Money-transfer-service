@@ -8,6 +8,8 @@ import me.volart.exception.MapperException;
 
 import java.io.IOException;
 
+import static me.volart.common.StatusCode.PARSER_ERROR;
+
 public final class Mapper {
 
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
@@ -23,7 +25,7 @@ public final class Mapper {
       return OBJECT_MAPPER.writeValueAsString(obj);
     } catch (JsonProcessingException e) {
       String message = "Can't parse to JSON";
-      throw new MapperException(message, e);
+      throw new MapperException(PARSER_ERROR, message, e);
     }
   }
 
@@ -32,7 +34,7 @@ public final class Mapper {
       return OBJECT_MAPPER.readValue(json, type);
     } catch (IOException e) {
       String message = "Can't parse from JSON";
-      throw new MapperException(message, e);
+      throw new MapperException(PARSER_ERROR, message, e);
     }
   }
 
@@ -41,7 +43,7 @@ public final class Mapper {
       return OBJECT_MAPPER.readValue(json, typeRef);
     } catch (IOException e) {
       String message = "Can't parse from JSON";
-      throw new MapperException(message, e);
+      throw new MapperException(PARSER_ERROR, message, e);
     }
   }
 }

@@ -6,12 +6,15 @@ import me.volart.dto.ResponseInfo;
 import me.volart.dto.TransferInfo;
 import me.volart.exception.AccountException;
 import me.volart.exception.ApiParameterException;
+import me.volart.exception.BaseException;
 import me.volart.exception.ClientNotFound;
 import me.volart.exception.MapperException;
 import me.volart.service.ClientService;
 import me.volart.util.Mapper;
 import spark.Response;
 
+import static me.volart.common.StatusCode.INVALID_ID;
+import static me.volart.common.StatusCode.OK;
 import static org.eclipse.jetty.http.HttpStatus.BAD_REQUEST_400;
 import static org.eclipse.jetty.http.HttpStatus.CREATED_201;
 import static org.eclipse.jetty.http.HttpStatus.NOT_FOUND_404;
@@ -39,7 +42,7 @@ public class ClientApi {
       Client client = Mapper.fromJson(req.body(), Client.class);
       service.createClient(client);
       res.status(CREATED_201);
-      return Mapper.toJson(ResponseInfo.create("Successfully created"));
+      return Mapper.toJson(ResponseInfo.create("Successfully created", OK));
     });
 
     get("/client/:clientId", (req, res) -> {
@@ -53,35 +56,35 @@ public class ClientApi {
     delete("/client/:clientId", (req, res) -> {
       long id = parsClientId(req.params(PARAM_CLIENT_ID));
       service.deleteClient(id);
-      return Mapper.toJson(ResponseInfo.create("Successfully deleted"));
+      return Mapper.toJson(ResponseInfo.create("Successfully deleted", OK));
     });
 
     post("/client/:clientId/transfer", (req, res) -> {
       Long id = parsClientId(req.params(PARAM_CLIENT_ID));
       TransferInfo transferInfo = Mapper.fromJson(req.body(), TransferInfo.class);
       service.transferMoney(id, transferInfo);
-      return Mapper.toJson(ResponseInfo.create("Money was successfully transferred"));
+      return Mapper.toJson(ResponseInfo.create("Money was successfully transferred", OK));
     });
 
   }
 
   private void initExceptionMapper() {
-    exception(ApiParameterException.class, (exception, req, res) -> hadleException(exception, res, BAD_REQUEST_400));
-    exception(ClientNotFound.class, (exception, req, res) -> hadleException(exception, res, NOT_FOUND_404));
-    exception(MapperException.class, (exception, req, res) -> hadleException(exception, res, BAD_REQUEST_400));
-    exception(AccountException.class, (exception, req, res) -> hadleException(exception, res, BAD_REQUEST_400));
+    exception(ApiParameterException.class, (exception, req, res) -> handleException(exception, res, BAD_REQUEST_400));
+    exception(ClientNotFound.class, (exception, req, res) -> handleException(exception, res, NOT_FOUND_404));
+    exception(MapperException.class, (exception, req, res) -> handleException(exception, res, BAD_REQUEST_400));
+    exception(AccountException.class, (exception, req, res) -> handleException(exception, res, BAD_REQUEST_400));
   }
 
-  private <T extends Exception> void hadleException(T exception, Response res, int statusCode) {
+  private <T extends BaseException> void handleException(T exception, Response res, int statusCode) {
     res.status(statusCode);
-    res.body(Mapper.toJson(ResponseInfo.create(exception.getMessage())));
+    res.body(Mapper.toJson(ResponseInfo.create(exception.getMessage(), exception.getStatusCode())));
   }
 
   private long parsClientId(String clientIdStr) {
     try {
       return Long.valueOf(clientIdStr);
     } catch (Exception e) {
-      throw new ApiParameterException("ClientId should be a number, but -> %s", clientIdStr);
+      throw new ApiParameterException(INVALID_ID, "ClientId should be a number, but -> %s", clientIdStr);
     }
   }
 }

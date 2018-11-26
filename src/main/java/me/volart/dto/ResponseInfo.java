@@ -1,6 +1,7 @@
 package me.volart.dto;
 
 import lombok.Data;
+import me.volart.common.StatusCode;
 
 @Data
 public class ResponseInfo<T> {
@@ -15,9 +16,15 @@ public class ResponseInfo<T> {
    */
   private T data;
 
-  public static ResponseInfo create(String msg){
+  /**
+   * Status code makes a response more specific.
+   */
+  private int statusCode;
+
+  public static ResponseInfo create(String msg, StatusCode statusCode){
     ResponseInfo info = new ResponseInfo();
     info.setMessage(msg);
+    info.setStatusCode(statusCode.getCode());
     return info;
   }
 }
