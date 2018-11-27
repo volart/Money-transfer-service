@@ -10,9 +10,8 @@ public enum StatusCode {
   ACCOUNT_DOES_NOT_EXIST(5),
   CLIENT_ALREADY_EXISTS(6),
   INVALID_ID(7),
-  PARSER_ERROR(8)
-
-  ;
+  PARSER_ERROR(8),
+  INVALID_CURRENCY(9);
 
   private final int code;
 

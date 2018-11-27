@@ -1,13 +1,14 @@
 package me.volart.util;
 
-import me.volart.dao.model.AccountDto;
 import me.volart.dao.model.ClientDto;
 import me.volart.dto.Account;
 import me.volart.dto.Client;
 import me.volart.dto.ResponseInfo;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public final class DataGenerator {
 
@@ -26,11 +27,8 @@ public final class DataGenerator {
   public static ClientDto createClientDto(long id, String currency, long amount) {
     ClientDto clientDto = new ClientDto();
     clientDto.setId(id);
-    List<AccountDto> accountDtos = new ArrayList<>();
-    AccountDto accountDto = new AccountDto();
-    accountDto.setAmount(amount);
-    accountDto.setCurrency(currency);
-    accountDtos.add(accountDto);
+    Map<String, Long> accountDtos = new HashMap<>();
+    accountDtos.put(currency, amount);
     clientDto.setAccounts(accountDtos);
     return clientDto;
   }
