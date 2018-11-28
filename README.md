@@ -20,11 +20,11 @@ The system has ability to create, get, delete a client and transfer money betwee
 Method   | Description                         | URL                        | Request    | Response
 ---------|-------------------------------------|----------------------------| -----------|------------
 POST     |Create client                        | /client                    | Client     | ResponseInfo
-GET      |Get client                           | /client/:clientId          | -          | ResponseInfo
-DELETE   |Delete client                        | /client/:clientId          | -          | ResponseInfo
-POST     |Transfer money from client to another| /client/:clientId/transfer |TransferInfo| ResponseInfo
+GET      |Get client                           | /client/{clientId}          | -          | ResponseInfo
+DELETE   |Delete client                        | /client/{clientId}          | -          | ResponseInfo
+POST     |Transfer money from client to another| /client/{clientId}/transfer |TransferInfo| ResponseInfo
 
-_:clientId_ - the long value 
+_{clientId}_ - the long value 
     
 ### Data type examples
 
