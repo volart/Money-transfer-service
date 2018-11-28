@@ -1,9 +1,13 @@
 package me.volart.dao;
 
 import me.volart.dao.model.ClientDto;
+import me.volart.exception.AccountException;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+
+import static me.volart.common.StatusCode.CLIENT_ALREADY_EXISTS;
+
 
 public class InMemoryClientDao implements ClientDao {
 
@@ -11,7 +15,10 @@ public class InMemoryClientDao implements ClientDao {
 
   @Override
   public void save(ClientDto client) {
-    storage.putIfAbsent(client.getId(), client);
+    ClientDto existed = storage.putIfAbsent(client.getId(), client);
+    if(existed != null) {
+      throw new AccountException(CLIENT_ALREADY_EXISTS, "Client (id = %s) already exists", existed.getId().toString());
+    }
   }
 
   @Override

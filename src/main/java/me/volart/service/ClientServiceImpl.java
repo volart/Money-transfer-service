@@ -34,6 +34,7 @@ public class ClientServiceImpl implements ClientService {
 
   @Override
   public void createClient(Client client) {
+    log.info("Started creation client with id = {}", client.getId());
     checkDuplicateCurrencies(client);
     checkExistence(client);
     for (Account account : client.getAccounts()) {
@@ -41,6 +42,7 @@ public class ClientServiceImpl implements ClientService {
     }
 
     ClientDto clientDto = convertFrom(client);
+    log.info(clientDto.toString());
     clientDao.save(clientDto);
     log.info("Created client with id = {}", client.getId());
   }

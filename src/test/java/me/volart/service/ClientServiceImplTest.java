@@ -1,11 +1,14 @@
 package me.volart.service;
 
+import lombok.extern.slf4j.Slf4j;
 import me.volart.dao.InMemoryClientDao;
 import me.volart.dao.model.ClientDto;
 import me.volart.dto.Account;
 import me.volart.dto.Client;
+import me.volart.dto.TransferInfo;
 import me.volart.exception.AccountException;
 import me.volart.exception.ClientNotFound;
+import me.volart.util.DataGenerator;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -18,6 +21,7 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+@Slf4j
 public class ClientServiceImplTest {
 
   private ClientServiceImpl clientService;
@@ -30,7 +34,61 @@ public class ClientServiceImplTest {
   }
 
   @Test
-  public void testGetClientBy_clientExists_fine() {
+  public void testTransfer_enoughMoneyAndAccountExists_noException() {
+    Long transferAmount = 1000L;
+    String currency = "USD";
+    ClientDto from = DataGenerator.createClientDto(1, currency, transferAmount);
+    ClientDto to = DataGenerator.createClientDto(2, currency, 0);
+
+    Long expectedToAmount = to.getAccounts().get(currency) + transferAmount;
+    Long expectedFromAmount = from.getAccounts().get(currency) - transferAmount;
+
+    TransferInfo transferInfo = DataGenerator.createTransferInfo(2, currency, transferAmount);
+
+    clientService.transfer(from, to, transferInfo);
+    assertEquals(expectedToAmount, to.getAccounts().get(currency));
+    assertEquals(expectedFromAmount, from.getAccounts().get(currency));
+  }
+
+  @Test(expected = AccountException.class)
+  public void testTransfer_notEnoughMoneyAndAccountExists_exception() {
+    Long transferAmount = 10000L;
+    String currency = "USD";
+    ClientDto from = DataGenerator.createClientDto(1, currency, transferAmount - 1);
+    ClientDto to = DataGenerator.createClientDto(2, currency, 0);
+    TransferInfo transferInfo = DataGenerator.createTransferInfo(2, currency, transferAmount);
+    clientService.transfer(from, to, transferInfo);
+  }
+
+  @Test
+  public void testTransfer_enoughMoneyAndRecipientAccountDoesNotExist_noException() {
+    Long transferAmount = 1000L;
+    String usd = "USD";
+    String rub = "RUB";
+    ClientDto from = DataGenerator.createClientDto(1, usd, transferAmount);
+    ClientDto to = DataGenerator.createClientDto(2, rub, 0);
+    Long expectedFromAmount = from.getAccounts().get(usd) - transferAmount;
+    TransferInfo transferInfo = DataGenerator.createTransferInfo(2, usd, transferAmount);
+
+    clientService.transfer(from, to, transferInfo);
+    assertEquals(transferAmount, to.getAccounts().get(usd));
+    assertEquals(expectedFromAmount, from.getAccounts().get(usd));
+  }
+
+  @Test(expected = AccountException.class)
+  public void testTransfer_senderAccountDoesNotExist_exception() {
+    Long transferAmount = 1000L;
+    String usd = "USD";
+    String rub = "RUB";
+    ClientDto from = DataGenerator.createClientDto(1, rub, transferAmount);
+    ClientDto to = DataGenerator.createClientDto(2, usd, 0);
+    TransferInfo transferInfo = DataGenerator.createTransferInfo(2, usd, transferAmount);
+
+    clientService.transfer(from, to, transferInfo);
+  }
+
+  @Test
+  public void testGetClientBy_clientExists_noException() {
     long id = 1;
     ClientDto expected = new ClientDto();
     when(clientDao.findBy(id)).thenReturn(expected);
@@ -46,7 +104,7 @@ public class ClientServiceImplTest {
   }
 
   @Test
-  public void testGetAccount_accountExists_fine() {
+  public void testGetAccount_accountExists_noException() {
     String usd = "USD";
     ClientDto client = new ClientDto();
     Map<String, Long> accounts = new HashMap<>();
@@ -67,7 +125,7 @@ public class ClientServiceImplTest {
   }
 
   @Test
-  public void testCheckExistence_doesNotExist_fine() {
+  public void testCheckExistence_doesNotExist_noException() {
     long id = 1;
     when(clientDao.findBy(id)).thenReturn(null);
     Client client = new Client();
@@ -85,7 +143,7 @@ public class ClientServiceImplTest {
   }
 
   @Test
-  public void testCheckDuplicateCurrencies_noDuplicates_fine() {
+  public void testCheckDuplicateCurrencies_noDuplicates_noException() {
     Client client = new Client();
     List<Account> accounts = new ArrayList<>();
 
@@ -123,7 +181,7 @@ public class ClientServiceImplTest {
   }
 
   @Test
-  public void testCheckCurrency_validCurrencyCode_fine() {
+  public void testCheckCurrency_validCurrencyCode_noException() {
     String currencyCode = "AED";
     clientService.checkCurrency(currencyCode);
   }

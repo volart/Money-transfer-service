@@ -11,6 +11,7 @@ import me.volart.exception.ClientNotFound;
 import me.volart.exception.MapperException;
 import me.volart.service.ClientService;
 import me.volart.util.Mapper;
+import spark.Request;
 import spark.Response;
 
 import static me.volart.common.StatusCode.INVALID_ID;
@@ -38,34 +39,10 @@ public class ClientApi {
   }
 
   private void initApi() {
-    post("/client", (req, res) -> {
-      Client client = Mapper.fromJson(req.body(), Client.class);
-      service.createClient(client);
-      res.status(CREATED_201);
-      return Mapper.toJson(ResponseInfo.create("Successfully created", OK));
-    });
-
-    get("/client/:clientId", (req, res) -> {
-      long id = parsClientId(req.params(PARAM_CLIENT_ID));
-      Client client = service.getClient(id);
-      ResponseInfo<Client> responseInfo = new ResponseInfo<>();
-      responseInfo.setData(client);
-      return Mapper.toJson(responseInfo);
-    });
-
-    delete("/client/:clientId", (req, res) -> {
-      long id = parsClientId(req.params(PARAM_CLIENT_ID));
-      service.deleteClient(id);
-      return Mapper.toJson(ResponseInfo.create("Successfully deleted", OK));
-    });
-
-    post("/client/:clientId/transfer", (req, res) -> {
-      Long id = parsClientId(req.params(PARAM_CLIENT_ID));
-      TransferInfo transferInfo = Mapper.fromJson(req.body(), TransferInfo.class);
-      service.transferMoney(id, transferInfo);
-      return Mapper.toJson(ResponseInfo.create("Money was successfully transferred", OK));
-    });
-
+    post("/client", this::createClient);
+    get("/client/:clientId", this::getClient);
+    delete("/client/:clientId", this::deleteClient);
+    post("/client/:clientId/transfer", this::transferMoney);
   }
 
   private void initExceptionMapper() {
@@ -73,6 +50,34 @@ public class ClientApi {
     exception(ClientNotFound.class, (exception, req, res) -> handleException(exception, res, NOT_FOUND_404));
     exception(MapperException.class, (exception, req, res) -> handleException(exception, res, BAD_REQUEST_400));
     exception(AccountException.class, (exception, req, res) -> handleException(exception, res, BAD_REQUEST_400));
+  }
+
+  private String createClient(Request req, Response res) {
+    Client client = Mapper.fromJson(req.body(), Client.class);
+    service.createClient(client);
+    res.status(CREATED_201);
+    return Mapper.toJson(ResponseInfo.create("Successfully created", OK));
+  }
+
+  private String getClient(Request req, Response res) {
+    long id = parsClientId(req.params(PARAM_CLIENT_ID));
+    Client client = service.getClient(id);
+    ResponseInfo<Client> responseInfo = new ResponseInfo<>();
+    responseInfo.setData(client);
+    return Mapper.toJson(responseInfo);
+  }
+
+  private String deleteClient(Request req, Response res) {
+    long id = parsClientId(req.params(PARAM_CLIENT_ID));
+    service.deleteClient(id);
+    return Mapper.toJson(ResponseInfo.create("Successfully deleted", OK));
+  }
+
+  private String transferMoney(Request req, Response res) {
+    Long id = parsClientId(req.params(PARAM_CLIENT_ID));
+    TransferInfo transferInfo = Mapper.fromJson(req.body(), TransferInfo.class);
+    service.transferMoney(id, transferInfo);
+    return Mapper.toJson(ResponseInfo.create("Money was successfully transferred", OK));
   }
 
   private <T extends BaseException> void handleException(T exception, Response res, int statusCode) {

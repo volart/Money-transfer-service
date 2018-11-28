@@ -4,6 +4,7 @@ import me.volart.dao.model.ClientDto;
 import me.volart.dto.Account;
 import me.volart.dto.Client;
 import me.volart.dto.ResponseInfo;
+import me.volart.dto.TransferInfo;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -38,5 +39,13 @@ public final class DataGenerator {
     responseInfo.setData(obj);
     responseInfo.setMessage(msg);
     return responseInfo;
+  }
+
+  public static TransferInfo createTransferInfo(long id, String currency, long amount){
+    TransferInfo info = new TransferInfo();
+    info.setClientId(id);
+    info.setCurrency(currency);
+    info.setAmount(amount);
+    return info;
   }
 }
